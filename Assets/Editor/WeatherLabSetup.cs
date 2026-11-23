@@ -18,6 +18,7 @@ public static class WeatherLabSetup
         var weather = root.AddComponent<WeatherManager>();
         var cache = root.AddComponent<WebImageCache>();
         var playFab = root.AddComponent<PlayFabConnection>();
+        playFab.titleId = "1D58A0";
         var ui = root.AddComponent<WeatherLabUI>();
         ui.weather = weather; ui.images = cache; ui.playFab = playFab;
         var light = new GameObject("Sun").AddComponent<Light>();
@@ -43,6 +44,8 @@ public static class WeatherLabSetup
             }
             weather.skyboxes[i] = mat;
         }
+        if (AssetDatabase.IsValidFolder("Assets/Fantasy Skybox FREE"))
+            weather.skyboxes = LoadFantasySkyboxes();
         RenderSettings.skybox = weather.skyboxes[0];
         var camera = new GameObject("Main Camera").AddComponent<Camera>();
         camera.tag = "MainCamera";
@@ -59,7 +62,7 @@ public static class WeatherLabSetup
         ground.transform.localScale = new Vector3(10, 1, 10);
         ground.GetComponent<Renderer>().sharedMaterial = groundMat;
         string[] urls = {
-            "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
+            "https://eol.jsc.nasa.gov/DatabaseImages/EFS/lowres/AS17/AS17-148-22727.JPG",
             "https://nssdc.gsfc.nasa.gov/image/planetary/earth/apollo16_earth_northamerica.jpg",
             "https://images-assets.nasa.gov/image/PIA01492/PIA01492~orig.jpg" };
         string[] labels = { "01 / BLUE MARBLE · NASA", "02 / APOLLO 16 · NASA", "03 / NEPTUNE · NASA/JPL" };
@@ -112,20 +115,27 @@ public static class WeatherLabSetup
     {
         var weather = UnityEngine.Object.FindFirstObjectByType<WeatherManager>();
         if (weather == null) throw new InvalidOperationException("Open WeatherLab first.");
+        var materials = LoadFantasySkyboxes();
         Undo.RecordObject(weather, "Assign Fantasy skyboxes");
-        int count = 0;
-        foreach (string guid in AssetDatabase.FindAssets("t:Material"))
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.Contains("WeatherLabMaterials") || path.IndexOf("Fantasy", StringComparison.OrdinalIgnoreCase) < 0) continue;
-            string name = Path.GetFileNameWithoutExtension(path);
-            for (int i = 0; i < 8; i++)
-                if (name.Equals(((WeatherManager.Sky)i).ToString(), StringComparison.OrdinalIgnoreCase))
-                { weather.skyboxes[i] = AssetDatabase.LoadAssetAtPath<Material>(path); count++; }
-        }
+        weather.skyboxes = materials;
+        RenderSettings.skybox = materials[(int)WeatherManager.Sky.Day];
         EditorUtility.SetDirty(weather);
         EditorSceneManager.MarkSceneDirty(weather.gameObject.scene);
-        Debug.Log("Assigned " + count + " Fantasy materials. Check all eight Inspector slots; assign variants manually if needed.");
+        Debug.Log("Assigned all eight weather slots to the Fantasy Skybox FS003 set. Save the scene to keep the assignments.");
+    }
+
+    static Material[] LoadFantasySkyboxes()
+    {
+        // This pack calls its sunny material Day; use it for both clear daytime states.
+        string[] variants = { "Day", "Night", "Day", "Day_Sunless", "Rainy", "Snowy", "Sunrise", "Sunset" };
+        var materials = new Material[variants.Length];
+        for (int i = 0; i < variants.Length; i++)
+        {
+            string path = "Assets/Fantasy Skybox FREE/Panoramics/FS003/FS003_" + variants[i] + ".mat";
+            materials[i] = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (materials[i] == null) throw new InvalidOperationException("Missing Fantasy skybox: " + path);
+        }
+        return materials;
     }
 
     [MenuItem("Weather Lab/Validate scene and weather mapping")]

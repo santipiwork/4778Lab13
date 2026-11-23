@@ -32,19 +32,21 @@ public class WeatherLabUI : MonoBehaviour
         GUILayout.Label("BILLBOARD CACHE", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
         GUILayout.Label($"Requests: {images.DownloadCount}  Shared: {images.CacheHits}  Stored: {images.CachedCount}");
         GUILayout.Label(images.Status, new GUIStyle(GUI.skin.label) { wordWrap = true });
+        GUI.enabled = images.PendingCount == 0;
         if (GUILayout.Button("Retry images / demonstrate cached reuse"))
             foreach (var board in FindObjectsByType<WebBillboard>(FindObjectsSortMode.None)) board.Reload();
+        GUI.enabled = true;
         GUILayout.Space(12);
         GUILayout.Label("PLAYFAB / TEST PLAYER", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
         GUILayout.Label("Title ID");
         playFab.titleId = GUILayout.TextField(playFab.titleId);
-        GUILayout.Label("Test player username (not developer login)");
+        GUILayout.Label("New player username: 3–20 characters");
         username = GUILayout.TextField(username);
-        GUILayout.Label("Test player password (not saved)");
+        GUILayout.Label("Player password: 6–100 characters (not saved)");
         password = GUILayout.PasswordField(password, '*');
         GUI.enabled = !playFab.Busy;
-        if (GUILayout.Button("Register test player")) { playFab.Authenticate(username, password, true); password = ""; }
-        if (GUILayout.Button("Log in test player")) { playFab.Authenticate(username, password, false); password = ""; }
+        if (GUILayout.Button("Register test player") && playFab.Authenticate(username, password, true)) password = "";
+        if (GUILayout.Button("Log in test player") && playFab.Authenticate(username, password, false)) password = "";
         GUI.enabled = true;
         GUILayout.Label(playFab.Status, new GUIStyle(GUI.skin.label) { wordWrap = true });
         GUILayout.EndScrollView();

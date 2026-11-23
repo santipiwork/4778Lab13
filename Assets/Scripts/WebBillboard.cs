@@ -1,24 +1,31 @@
 using System;
 using UnityEngine;
 
+[RequireComponent(typeof(Renderer))]
 public class WebBillboard : MonoBehaviour
 {
     public string imageUrl;
     public WebImageCache cache;
     Material material;
     Vector3 originalScale;
+    int loadVersion;
     void Awake()
     {
         material = GetComponent<Renderer>().material;
         originalScale = transform.localScale;
     }
     void Start() { Reload(); }
-    public void GetWebImage(Action<Texture2D> callback) { cache.GetWebImage(imageUrl, callback); }
+    public void GetWebImage(Action<Texture2D> callback)
+    {
+        if (cache == null) { Debug.LogError("Assign a WebImageCache to " + name, this); callback?.Invoke(null); return; }
+        cache.GetWebImage(imageUrl, callback);
+    }
     public void Reload()
     {
+        int version = ++loadVersion;
         GetWebImage(texture =>
         {
-            if (this == null || texture == null) return;
+            if (this == null || texture == null || version != loadVersion) return;
             material.mainTexture = texture;
             material.color = Color.white;
             float aspect = (float)texture.width / texture.height;
